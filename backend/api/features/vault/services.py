@@ -74,6 +74,26 @@ class VaultService:
                             }
                         ],
                     },
+                    {
+                        "id": 99904,
+                        "name": "Disney+",
+                        "logo_url": "https://cdn.iconscout.com/icon/free/png-256/disney-3521398-2944810.png",
+                        "profile_count": 1,
+                        "profiles": [
+                            {
+                                "id": 99904,
+                                "title": "Family Account",
+                                "username_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "username_iv": "duress_fake_iv_10",
+                                "password_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "password_iv": "duress_fake_iv_11",
+                                "email_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "email_iv": "duress_fake_iv_12",
+                                "password_strength": 3,
+                                "is_breached": False,
+                            }
+                        ],
+                    },
                 ],
             },
             {
@@ -100,7 +120,74 @@ class VaultService:
                                 "is_breached": False,
                             }
                         ],
-                    }
+                    },
+                    {
+                        "id": 99905,
+                        "name": "LinkedIn",
+                        "logo_url": "https://cdn.iconscout.com/icon/free/png-256/linkedin-162-432545.png",
+                        "profile_count": 1,
+                        "profiles": [
+                            {
+                                "id": 99905,
+                                "title": "Work Account",
+                                "username_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "username_iv": "duress_fake_iv_13",
+                                "password_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "password_iv": "duress_fake_iv_14",
+                                "email_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "email_iv": "duress_fake_iv_15",
+                                "password_strength": 4,
+                                "is_breached": False,
+                            }
+                        ],
+                    },
+                ],
+            },
+            {
+                "id": 99903,
+                "name": "Developer & Productivity",
+                "description": "Work and development tools",
+                "organizations": [
+                    {
+                        "id": 99906,
+                        "name": "GitHub",
+                        "logo_url": "https://cdn.iconscout.com/icon/free/png-256/github-169-1175028.png",
+                        "profile_count": 1,
+                        "profiles": [
+                            {
+                                "id": 99906,
+                                "title": "Developer Profile",
+                                "username_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "username_iv": "duress_fake_iv_16",
+                                "password_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "password_iv": "duress_fake_iv_17",
+                                "email_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "email_iv": "duress_fake_iv_18",
+                                "password_strength": 4,
+                                "is_breached": False,
+                            }
+                        ],
+                    },
+                    {
+                        "id": 99907,
+                        "name": "Slack",
+                        "logo_url": "https://cdn.iconscout.com/icon/free/png-256/slack-2296065-1912024.png",
+                        "profile_count": 1,
+                        "profiles": [
+                            {
+                                "id": 99907,
+                                "title": "Company Workspace",
+                                "username_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "username_iv": "duress_fake_iv_19",
+                                "password_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "password_iv": "duress_fake_iv_20",
+                                "email_encrypted": "ZHVyZXNzX2Zha2VfZGF0YQ==",
+                                "email_iv": "duress_fake_iv_21",
+                                "password_strength": 3,
+                                "is_breached": False,
+                            }
+                        ],
+                    },
                 ],
             },
         ]
