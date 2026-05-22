@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { getUserProfile, deleteAccount, requestPasswordResetOTP, verifyPasswordResetOTP, changePassword } from "../services/authService";
+import { getUserProfile, deleteAccount, requestPasswordResetOTP, verifyPasswordResetOTP } from "../services/authService";
+import { useCrypto } from "../services/CryptoContext";
 import { getPinStatus, resetPin, clearPin } from "../services/pinService";
 import { useAuth } from "../contexts/AuthContext";
 import SecuritySettingsPanel from "../components/SecuritySettingsPanel";
@@ -11,6 +12,7 @@ import { Input, Button, DotGrid, MagicCard } from "../components/ui";
 import { Lock, ShieldAlert, ShieldCheck, Trash2, KeyRound, Key, RefreshCw, Settings, Download, Upload, ArrowLeft, Sparkles, Terminal } from "lucide-react";
 
 const SecuritySettingsPage: React.FC = () => {
+  const { changeMasterPassword } = useCrypto();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +99,7 @@ const SecuritySettingsPage: React.FC = () => {
     setIsChangingPassword(true);
 
     try {
-      await changePassword(currentPassword, newPassword);
+      await changeMasterPassword(currentPassword, newPassword);
       setPasswordSuccess("Password changed successfully!");
       setCurrentPassword("");
       setNewPassword("");

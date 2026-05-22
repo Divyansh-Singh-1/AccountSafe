@@ -31,7 +31,9 @@ import {
   encryptVault,
   decryptVault,
   createEmptyVault,
+  generateSalt,
 } from './cryptoService';
+import { storeKeyData } from './encryptionService';
 import apiClient from '../api/apiClient';
 import { broadcastLogout } from '../hooks/useGlobalLogout';
 import { logger } from '../utils/logger';
@@ -132,14 +134,14 @@ export interface CryptoContextValue {
    */
   setDuressMode?: (isDuress: boolean) => void;
   
-  /**
-   * Fast unlock for mode switching - skips auth verification since already verified
-   * @param password - User's password
-   * @param salt - Salt for key derivation
-   * @param isDuress - Whether this is duress mode
-   * @returns Success status
-   */
   fastUnlockForModeSwitch?: (password: string, salt: string, isDuress: boolean) => Promise<{ success: boolean; error?: string }>;
+
+  /**
+   * Change master password, re-encrypt the in-memory vault, and sync to server.
+   * @param currentPassword - The user's current master password
+   * @param newPassword - The user's new master password
+   */
+  changeMasterPassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -557,6 +559,75 @@ export const CryptoProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [resetInactivityTimer]);
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // CHANGE MASTER PASSWORD - Re-encrypt in-memory vault and change credentials
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const changeMasterPassword = useCallback(async (
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> => {
+    if (!isUnlocked || !vault || !masterKeyRef.current) {
+      throw new Error('Vault is locked or not initialized');
+    }
+    
+    const username = localStorage.getItem('username');
+    if (!username) {
+      throw new Error('Not logged in');
+    }
+    
+    let currentSalt = salt;
+    if (!currentSalt) {
+      currentSalt = localStorage.getItem(`encryption_salt_${username}`);
+      if (!currentSalt) {
+        throw new Error('Cannot find current encryption salt');
+      }
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // 1. Verify current credentials by deriving current auth hash
+      const currentAuthHash = deriveAuthHash(currentPassword, currentSalt);
+      
+      // 2. Generate new salt and derive new keys
+      logger.log('🔐 Generating new salt and deriving new keys...');
+      const newSalt = generateSalt();
+      const { masterKey: newMasterKey, authHash: newAuthHash } = await deriveAllKeys(newPassword, newSalt);
+      
+      // 3. Re-encrypt current in-memory vault with the new master key
+      logger.log('🔒 Re-encrypting in-memory vault...');
+      const reEncryptedBlob = await encryptVault(vault, newMasterKey);
+      
+      // 4. Update password on server via ZK endpoint
+      logger.log('📤 Submitting new zero-knowledge credentials to server...');
+      await apiClient.post('/zk/change-password/', {
+        current_auth_hash: currentAuthHash,
+        new_auth_hash: newAuthHash,
+        new_salt: newSalt
+      });
+      
+      // 5. Upload the re-encrypted vault blob to server
+      logger.log('📤 Uploading re-encrypted vault to server...');
+      await apiClient.put('/vault/', {
+        vault_blob: reEncryptedBlob,
+      });
+      
+      // 6. Update local state and localStorage
+      masterKeyRef.current = newMasterKey;
+      setSalt(newSalt);
+      localStorage.setItem(`encryption_salt_${username}`, newSalt);
+      storeKeyData(newSalt);
+      
+      logger.log('✅ Password changed and vault re-encrypted successfully');
+    } catch (error: unknown) {
+      console.error('Password change failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isUnlocked, vault, salt]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // CONTEXT VALUE
   // ═══════════════════════════════════════════════════════════════════════════
   
@@ -577,6 +648,7 @@ export const CryptoProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     getAuthHash,
     setDuressMode,
     fastUnlockForModeSwitch,
+    changeMasterPassword,
   }), [
     isUnlocked,
     isLoading,
@@ -594,6 +666,7 @@ export const CryptoProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     getAuthHash,
     setDuressMode,
     fastUnlockForModeSwitch,
+    changeMasterPassword,
   ]);
 
   return (
