@@ -148,74 +148,40 @@ export const login = async (username: string, password: string, turnstileToken?:
     }
   }
   
-  // Step 2: Derive auth_hash with master salt first
+  // Step 2: Derive auth_hash with master salt
   const authHash = deriveAuthHash(password, salt);
   
-  // Step 3: Login with TRUE zero-knowledge endpoint
+  // Step 3: Derive duress_auth_hash if duress salt exists
+  const duressAuthHash = duressSalt ? deriveAuthHash(password, duressSalt) : undefined;
+  
+  // Step 4: Login with TRUE zero-knowledge endpoint
   // ❌ Password is NOT sent
-  // ✅ Only auth_hash (derived) is sent
-  try {
-    const response = await apiClient.post('/zk/login/', { 
-      username, 
-      auth_hash: authHash,
-      turnstile_token: turnstileToken 
-    });
-    
-    const token = response.data.key;
-    const responseSalt = response.data.salt || salt;  // Use returned salt
-    const isDuress = response.data.is_duress || false;
-    
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('username', username);
-    localStorage.setItem(`encryption_salt_${username}`, responseSalt);
-    
-    if (isDuress) {
-      logger.log('⚠️ Duress mode detected - will show decoy vault');
-    }
-    
+  // ✅ Only derived auth_hash and duress_auth_hash are sent in a single request
+  const response = await apiClient.post('/zk/login/', { 
+    username, 
+    auth_hash: authHash,
+    duress_auth_hash: duressAuthHash || null,
+    turnstile_token: turnstileToken 
+  });
+  
+  const token = response.data.key;
+  const responseSalt = response.data.salt || salt;  // Use returned salt
+  const isDuress = response.data.is_duress || false;
+  
+  localStorage.setItem('authToken', token);
+  localStorage.setItem('username', username);
+  localStorage.setItem(`encryption_salt_${username}`, responseSalt);
+  
+  if (isDuress) {
+    logger.log('⚠️ Duress mode activated - showing decoy vault');
+  } else {
     logger.log('✅ Zero-knowledge login successful (password NEVER sent to server)');
-    
-    return {
-      ...response.data,
-      salt: responseSalt  // Return correct salt for CryptoContext to use
-    };
-  } catch (error: unknown) {
-    // If login failed and duress_salt exists, try with duress salt
-    const axiosError = error as { response?: { status?: number } };
-    if (axiosError.response?.status === 401 && duressSalt) {
-      logger.log('🔄 Master auth failed, trying duress salt...');
-      
-      const duressAuthHash = deriveAuthHash(password, duressSalt);
-      
-      const response = await apiClient.post('/zk/login/', { 
-        username, 
-        auth_hash: duressAuthHash,
-        turnstile_token: turnstileToken 
-      });
-      
-      const token = response.data.key;
-      const responseSalt = response.data.salt || duressSalt;  // Should be duress_salt
-      const isDuress = response.data.is_duress || false;
-      
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('username', username);
-      localStorage.setItem(`encryption_salt_${username}`, responseSalt);
-      
-      if (isDuress) {
-        logger.log('⚠️ Duress mode activated - showing decoy vault');
-      }
-      
-      logger.log('✅ Zero-knowledge login successful with duress mode (password NEVER sent to server)');
-      
-      return {
-        ...response.data,
-        salt: responseSalt
-      };
-    }
-    
-    // Re-throw original error if duress login also failed or doesn't exist
-    throw error;
   }
+  
+  return {
+    ...response.data,
+    salt: responseSalt  // Return correct salt for CryptoContext to use
+  };
 };
 
 // REMOVED: migrateAndLogin function - migration endpoint disabled
@@ -260,14 +226,16 @@ export const relogin = async (username: string, password: string): Promise<{ suc
       return { success: false };
     }
     
-    // Derive auth_hash with master salt first
+    // Derive auth_hash and duress_auth_hash
     const authHash = deriveAuthHash(password, salt!);
+    const duressAuthHash = duressSalt ? deriveAuthHash(password, duressSalt) : undefined;
     
-    // Try login with master auth_hash
+    // Try login with single POST containing both hashes
     try {
       const response = await apiClient.post('/zk/login/', { 
         username, 
         auth_hash: authHash,
+        duress_auth_hash: duressAuthHash || null,
         is_relogin: true
       });
       
@@ -283,32 +251,6 @@ export const relogin = async (username: string, password: string): Promise<{ suc
       
       return { success: true, salt: responseSalt, isDuress };
     } catch (error: unknown) {
-      // If login failed and duress_salt exists, try with duress salt
-      const axiosError = error as { response?: { status?: number } };
-      if (axiosError.response?.status === 401 && duressSalt) {
-        logger.log('🔄 Master auth failed in relogin, trying duress salt...');
-        
-        const duressAuthHash = deriveAuthHash(password, duressSalt);
-        
-        const response = await apiClient.post('/zk/login/', { 
-          username, 
-          auth_hash: duressAuthHash,
-          is_relogin: true
-        });
-        
-        const token = response.data.key;
-        const responseSalt = response.data.salt || duressSalt;
-        const isDuress = response.data.is_duress || false;
-        
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('username', username);
-        localStorage.setItem(`encryption_salt_${username}`, responseSalt!);
-        
-        logger.log('✅ Zero-knowledge re-login with duress mode successful (password NEVER sent to server)');
-        
-        return { success: true, salt: responseSalt, isDuress };
-      }
-      
       return { success: false };
     }
   } catch (error) {
