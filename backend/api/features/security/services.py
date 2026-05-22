@@ -70,7 +70,7 @@ class SecurityService:
             SecurityService._send_login_notification(record, user)
 
     @staticmethod
-    def send_duress_alert(user, request):
+    def send_duress_alert(user, request=None, ip_address=None, user_agent=None):
         """Send SOS alert email when duress password is used."""
         try:
             if not hasattr(user, "userprofile") or not user.userprofile.sos_email:
@@ -79,9 +79,22 @@ class SecurityService:
             from api.features.common.turnstile import get_client_ip
 
             sos_email = user.userprofile.sos_email
-            ip_address = get_client_ip(request) if request else None
+            if not ip_address and request:
+                try:
+                    ip_address = get_client_ip(request)
+                except Exception:
+                    pass
+
+            if not user_agent and request:
+                try:
+                    user_agent = request.META.get("HTTP_USER_AGENT", "")
+                except Exception:
+                    pass
+
+            if not user_agent:
+                user_agent = ""
+
             location_data = SecurityService._get_location_data(ip_address) if ip_address else {}
-            user_agent = request.META.get("HTTP_USER_AGENT", "") if request else ""
             timestamp = timezone.now()
 
             device = parse_user_agent(user_agent)

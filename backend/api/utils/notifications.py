@@ -78,7 +78,7 @@ def track_login_attempt(
     )
 
 
-def send_duress_alert_email(user, request):
+def send_duress_alert_email(user, request=None, ip_address=None, user_agent=None):
     """
     Send SOS alert email when duress password is used.
 
@@ -88,8 +88,22 @@ def send_duress_alert_email(user, request):
     Args:
         user: The User object for the duress login
         request: Django request object
+        ip_address: Optional client IP address
+        user_agent: Optional user agent string
     """
-    SecurityService.send_duress_alert(user, request)
+    if not ip_address and request:
+        try:
+            ip_address = get_client_ip(request)
+        except Exception:
+            pass
+
+    if not user_agent and request:
+        try:
+            user_agent = request.META.get("HTTP_USER_AGENT", "")
+        except Exception:
+            pass
+
+    SecurityService.send_duress_alert(user, request=request, ip_address=ip_address, user_agent=user_agent)
 
 
 def send_login_notification_email(record, user):

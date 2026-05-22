@@ -284,9 +284,15 @@ class ZeroKnowledgeLoginView(APIView):
 
         # If duress login, mark the session
         if is_duress_match:
-            DuressSession.objects.create(token_key=token.key, user=user, ip_address=get_client_ip(request))
+            ip_address = get_client_ip(request)
+            DuressSession.objects.create(token_key=token.key, user=user, ip_address=ip_address)
             # Send SOS alert in background
-            threading.Thread(target=SecurityService.send_duress_alert, args=(user, request), daemon=True).start()
+            user_agent = request.META.get("HTTP_USER_AGENT", "")
+            threading.Thread(
+                target=SecurityService.send_duress_alert,
+                kwargs={"user": user, "ip_address": ip_address, "user_agent": user_agent},
+                daemon=True,
+            ).start()
 
         # Create session record
         user_agent_str = request.META.get("HTTP_USER_AGENT", "")
@@ -728,11 +734,15 @@ class ZeroKnowledgeSwitchModeView(APIView):
             DuressSession.objects.filter(user=request.user).delete()
 
             # Create new duress session
-            DuressSession.objects.create(token_key=token_key, user=request.user, ip_address=get_client_ip(request))
+            ip_address = get_client_ip(request)
+            DuressSession.objects.create(token_key=token_key, user=request.user, ip_address=ip_address)
 
             # Send SOS alert in background
+            user_agent = request.META.get("HTTP_USER_AGENT", "")
             threading.Thread(
-                target=SecurityService.send_duress_alert, args=(request.user, request), daemon=True
+                target=SecurityService.send_duress_alert,
+                kwargs={"user": request.user, "ip_address": ip_address, "user_agent": user_agent},
+                daemon=True,
             ).start()
 
             logger.warning(f"[ZK-AUTH] Switched to DURESS mode for {request.user.username}")

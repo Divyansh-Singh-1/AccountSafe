@@ -207,14 +207,20 @@ class AuthService:
 
         # Handle duress mode
         if is_duress_match:
+            ip_address = get_client_ip(request) if request else None
+            user_agent = request.META.get("HTTP_USER_AGENT", "") if request else ""
             DuressSession.objects.create(
-                token_key=token.key, user=user, ip_address=get_client_ip(request) if request else None
+                token_key=token.key, user=user, ip_address=ip_address
             )
             # Send SOS alert in background (import here to avoid circular)
             import threading
             from api.features.security.services import SecurityService
 
-            threading.Thread(target=SecurityService.send_duress_alert, args=(user, request), daemon=True).start()
+            threading.Thread(
+                target=SecurityService.send_duress_alert,
+                kwargs={"user": user, "ip_address": ip_address, "user_agent": user_agent},
+                daemon=True,
+            ).start()
 
         # Create session
         if request:
