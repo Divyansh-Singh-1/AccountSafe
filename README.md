@@ -44,33 +44,39 @@ sequenceDiagram
 ## Features
 
 ### Zero-Knowledge Security
-- **Zero-Knowledge Encryption**: AES-256-GCM with Argon2id key derivation (memory-hard KDF)
-- **Zero-Knowledge Authentication**: Password never leaves your device; only derived `auth_hash` is transmitted
-- **Zero-Knowledge Export/Import**: Encrypted vault backup that only you can decrypt
+- **Zero-Knowledge Encryption**: AES-256-GCM with Argon2id key derivation (memory-hard KDF).
+- **Zero-Knowledge Authentication**: Password never leaves your device; only a derived `auth_hash` is transmitted.
+- **Zero-Knowledge Export/Import**: Encrypted vault backups that only you can decrypt.
+- **Verification Script**: Easily inspect raw encrypted columns and salts in the database using the database dump utility.
 
-### Active Defense
-- **Duress Mode (Ghost Vault)**: Alternate password reveals a decoy vault with fake credentials. Attacker sees low-value logins while your real vault stays hidden.
-- **Canary Trap Credentials**: Fake credentials that trigger silent alerts when accessed - know immediately if your exported data is compromised.
-- **SOS Email Alerts**: Automatic notification to a trusted contact when duress mode is activated.
+### Active Defense & Plausible Deniability
+- **Duress Mode (Ghost Vault)**: Logging in with an alternate duress password reveals a realistic decoy vault showing **7 decoy credentials** (Spotify, Netflix, Twitter/X, Disney+, LinkedIn, GitHub, Slack). 
+- **SOS Email Alerts**: Automatically and silently dispatches a security notification email containing the intruder's IP address, country, ISP, and browser details to your trusted backup email when duress mode is activated.
+- **Canary Trap Credentials**: Fake honeytoken credentials that trigger silent alerts when accessed, instantly warning you if your data is compromised.
+
+### Trash & Cryptographic Shredding
+- **Recycle Bin**: Soft-delete credentials to move them to the Trash.
+- **Easy Restoration**: Restore accidentally deleted credentials back to your active vault with a single click.
+- **Crypto-Shredding**: Permanently shred credentials to completely erase their ciphertexts, IVs, and reference hashes from the database.
 
 ### Security Intelligence
-- **Security Health Score**: Real-time vault assessment (password strength, reuse, age, breach status)
-- **Breach Detection**: Integration with Have I Been Pwned API
-- **Session Management**: View and revoke active sessions across devices
+- **Security Health Score**: Real-time vault assessment (password strength, reuse, age, breach status).
+- **Breach Detection**: Integration with Have I Been Pwned API.
+- **Session Management**: View and revoke active sessions across devices.
 
 ### Secure Sharing
-- **Shared Secrets**: Time-limited, passphrase-protected credential sharing
-- **Auto-Expiry**: Shared links automatically expire and self-destruct
+- **Shared Secrets**: Time-limited, passphrase-protected credential sharing.
+- **Auto-Expiry**: Shared links automatically expire and self-destruct.
 
 ### Convenience
-- **Digital Wallet**: Visual credit card storage with masked display
-- **Smart Import**: Bulk import from browser password exports (Chrome, Firefox, Edge)
-- **Brand Detection**: Automatic logo fetching for organisations
+- **Digital Wallet**: Visual credit card storage with masked display.
+- **Smart Import**: Bulk import from browser password exports (Chrome, Firefox, Edge).
+- **Brand Detection**: Automatic logo fetching for organisations.
 
 ### Data Safety
-- **Automated Backups**: PostgreSQL dumps every 6 hours with 7-day retention
-- **One-Command Restore**: Full disaster recovery via `./scripts/restore.sh`
-- **Encrypted Backups**: Optional GPG encryption for backup files
+- **Automated Backups**: PostgreSQL dumps every 6 hours with 7-day retention.
+- **One-Command Restore**: Full disaster recovery via `./scripts/restore.sh`.
+- **Encrypted Backups**: Optional GPG encryption for backup files.
 
 ---
 
@@ -390,6 +396,30 @@ PORT=3001 npm start
 # Windows PowerShell
 $env:PORT=3001; npm start
 ```
+
+---
+
+## Verifying Zero-Knowledge Encryption Live
+
+To verify that AccountSafe is indeed zero-knowledge and all credentials/sensitive fields are encrypted before hitting the database, you can use the built-in database dump tool:
+
+```powershell
+# 1. CD to the project folder
+cd AccountSafe
+
+# 2. Run the database inspection tool
+.\backend\venv\Scripts\python scratch\show_encrypted_data.py
+```
+
+This queries the SQLite database directly and prints:
+- `auth_hash` (the SHA-256 hash used to authenticate, proving the server never stores or knows the master password).
+- `username_encrypted`, `password_encrypted`, `email_encrypted`, and their unique `IVs` (proving data is stored as AES-256-GCM ciphertexts).
+
+### Verifying Visually via Django Admin
+You can also view the raw database contents in Django's built-in database administration dashboard:
+1. In your terminal, run: `cd backend && ..\venv\Scripts\python manage.py createsuperuser`
+2. Start the backend, and navigate to `http://localhost:8000/admin`.
+3. Click on **Profiles** to see a grid showing all stored usernames and passwords as encrypted ciphertexts.
 
 ---
 
