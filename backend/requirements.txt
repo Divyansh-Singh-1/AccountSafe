@@ -1,0 +1,68 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# AccountSafe - Pinned Dependencies (Supply Chain Hardened)
+# Last Updated: 2026-01-26
+# Policy: All versions pinned to prevent supply chain attacks
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Django Core (LTS 5.2.x - supported until April 2028)
+Django==5.2
+djangorestframework==3.15.2
+
+# Authentication packages
+dj-rest-auth[with_social]==7.0.0
+django-allauth==0.61.1
+
+# CORS handling
+django-cors-headers==4.6.0
+
+# HTTP requests
+requests==2.32.3
+
+# HTML parsing for website title extraction
+beautifulsoup4==4.12.3
+
+# Timezone support
+pytz==2024.2
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Image support
+Pillow==11.0.0
+
+# Encryption
+cryptography==44.0.0
+
+# User-Agent parsing for emails
+user-agents==2.2.0
+
+# PostgreSQL database adapter
+psycopg2-binary==2.9.10
+
+# Production WSGI server
+gunicorn==23.0.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Security Dependencies (NEW)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Rate limiting for API protection
+django-ratelimit==4.1.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Observability Dependencies
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# JSON-formatted logging for cloud log aggregators
+python-json-logger==2.0.7
+
+# Error tracking (opt-in via SENTRY_DSN environment variable)
+sentry-sdk[django]==2.19.2
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Testing Dependencies
+# ═══════════════════════════════════════════════════════════════════════════════
+pytest==8.3.4
+pytest-django==4.9.0
+factory-boy==3.3.1
+pytest-cov==6.0.0
