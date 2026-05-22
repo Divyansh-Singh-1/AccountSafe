@@ -550,6 +550,7 @@ class ZeroKnowledgeLoginView(APIView):
         result = AuthService.login_user(
             username=request.data.get("username", "").strip(),
             auth_hash=request.data.get("auth_hash", "").strip().lower(),
+            duress_auth_hash=request.data.get("duress_auth_hash", "").strip().lower(),
             request=request,
             turnstile_token=request.data.get("turnstile_token"),
             is_relogin=request.data.get("is_relogin", False),

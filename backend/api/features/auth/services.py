@@ -134,7 +134,12 @@ class AuthService:
 
     @staticmethod
     def login_user(
-        username: str, auth_hash: str, request=None, turnstile_token: str = None, is_relogin: bool = False
+        username: str,
+        auth_hash: str,
+        duress_auth_hash: str = None,
+        request=None,
+        turnstile_token: str = None,
+        is_relogin: bool = False,
     ) -> dict:
         """
         Login with zero-knowledge authentication.
@@ -185,7 +190,8 @@ class AuthService:
         is_duress_match = False
         if not is_master_match and profile.duress_auth_hash:
             duress_hash = profile.duress_auth_hash.lower()
-            is_duress_match = constant_time_compare(auth_hash, duress_hash)
+            check_hash = duress_auth_hash.lower() if duress_auth_hash else auth_hash
+            is_duress_match = constant_time_compare(check_hash, duress_hash)
 
         if not is_master_match and not is_duress_match:
             AuthService._track_login(request, username, False, user)

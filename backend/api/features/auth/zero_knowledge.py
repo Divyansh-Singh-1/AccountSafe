@@ -208,6 +208,7 @@ class ZeroKnowledgeLoginView(APIView):
 
         username = request.data.get("username", "").strip()
         auth_hash = request.data.get("auth_hash", "").strip().lower()
+        duress_auth_hash = request.data.get("duress_auth_hash", "").strip().lower()
         turnstile_token = request.data.get("turnstile_token")
         is_relogin = request.data.get("is_relogin", False)
 
@@ -262,7 +263,10 @@ class ZeroKnowledgeLoginView(APIView):
         is_duress_match = False
         if not is_master_match and profile.duress_auth_hash:
             duress_hash = profile.duress_auth_hash.lower()
-            is_duress_match = constant_time_compare(auth_hash, duress_hash)
+            # If the client provided a specific duress_auth_hash (dual-hash flow), use it.
+            # Otherwise fall back to checking auth_hash (single-hash legacy flow/re-auth flow).
+            check_hash = duress_auth_hash if duress_auth_hash else auth_hash
+            is_duress_match = constant_time_compare(check_hash, duress_hash)
 
         if not is_master_match and not is_duress_match:
             # Failed login
