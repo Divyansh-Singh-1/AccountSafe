@@ -594,6 +594,33 @@ class TestZeroKnowledgeLoginView:
         assert data["salt"] == duress_salt
 
     @override_settings(DEBUG=True)
+    def test_login_dual_hash_duress_success(self, api_client, create_zk_user):
+        user, token, master_auth_hash, salt = create_zk_user(username="dualduress", password="Master1!")
+        profile = UserProfile.objects.get(user=user)
+        duress_salt = generate_salt()
+        duress_hash = generate_auth_hash("Duress1!", duress_salt)
+        profile.duress_auth_hash = duress_hash
+        profile.duress_salt = duress_salt
+        profile.save()
+
+        # Send both auth_hash (wrong/master) and duress_auth_hash (correct duress)
+        with patch("api.features.security.services.SecurityService.send_duress_alert"):
+            resp = api_client.post(
+                self.URL,
+                {
+                    "username": "dualduress",
+                    "auth_hash": "a" * 64,
+                    "duress_auth_hash": duress_hash,
+                },
+                format="json",
+            )
+
+        assert resp.status_code == status.HTTP_200_OK
+        data = resp.json()
+        assert data["is_duress"] is True
+        assert data["salt"] == duress_salt
+
+    @override_settings(DEBUG=True)
     def test_login_duress_creates_duress_session(self, api_client, create_zk_user):
         user, token, auth_hash, salt = create_zk_user(username="duressession", password="Master1!")
         profile = UserProfile.objects.get(user=user)
